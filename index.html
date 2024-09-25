@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Downloader</title>
+    <title>Browser based verion of MKBSD - Download wallpapers from your favorite sellout grifter's app, with a sleek Web3-inspired UI, real-time previews, and dynamic image fetching!</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -32,13 +33,26 @@
             flex-wrap: wrap;
             justify-content: center;
         }
+        .progress-bar {
+            height: 25px;
+            width: 100%;
+            background-color: #e9ecef;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #28a745;
+            width: 0%;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Web3-inspired Image Downloader</h1>
-        <p>Download wallpapers from your favorite sellout grifter's app!</p>
+        <h1>Browser based verion of MKBSD - </h1>
+        <p>Download wallpapers from your favorite sellout grifter's app, with a sleek Web3-inspired UI, real-time previews, and dynamic image fetching!</p>
     </div>
 
     <div class="container">
@@ -47,29 +61,46 @@
             <button id="stopButton" class="btn btn-danger">Stop Download</button>
         </div>
 
-        <div id="status" class="text-center"></div>
+        <div id="status" class="text-center">
+            <p><strong>Status:</strong> <span id="statusText">Ready to start</span></p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <p>Downloaded: <span id="downloadedCount">0</span> / <span id="totalCount">0</span> images</p>
+            <p>Total Size: <span id="totalSize">0</span> KB</p>
+        </div>
 
         <h2 class="text-center">Preview</h2>
         <div id="preview" class="preview image-container text-center"></div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
-        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const progressFill = document.getElementById('progressFill');
+        const downloadedCount = document.getElementById('downloadedCount');
+        const totalCount = document.getElementById('totalCount');
+        const totalSizeText = document.getElementById('totalSize');
         const previewDiv = document.getElementById('preview');
 
         let eventSource;
 
         function updateStatus(data) {
             const { image, downloaded, total, size, total_size } = data;
-            statusDiv.innerHTML = `<div class="alert alert-info">
-                Downloading image ${downloaded}/${total}<br>
-                Current image size: ${Math.round(size / 1024)} KB<br>
-                Total downloaded size: ${Math.round(total_size / 1024)} KB
-            </div>`;
+
+            statusText.textContent = `Downloading image ${downloaded}/${total}`;
+            downloadedCount.textContent = downloaded;
+            totalCount.textContent = total;
+            totalSizeText.textContent = Math.round(total_size / 1024);
+
+            const progressPercent = Math.round((downloaded / total) * 100);
+            progressFill.style.width = `${progressPercent}%`;
+            progressFill.textContent = `${progressPercent}%`;
+
             const img = document.createElement('img');
             img.src = `/static/${image}`;  
             img.alt = `Image ${downloaded}`;
@@ -81,18 +112,20 @@
                 eventSource.close();  
             }
             previewDiv.innerHTML = '';  
-            statusDiv.innerHTML = '<div class="alert alert-info">Downloading...</div>';
+            statusText.textContent = 'Starting download...';
 
             eventSource = new EventSource('/start');
 
-                eventSource.onmessage = function(event) {
+            eventSource.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 updateStatus(data);
             };
 
             eventSource.onerror = function() {
-                statusDiv.innerHTML = '<div class="alert alert-danger">Error during download.</div>';
-                eventSource.close();
+                statusText.textContent = 'Error during download.';
+                if (eventSource) {
+                    eventSource.close();
+                }
             };
         });
 
@@ -101,7 +134,7 @@
                 eventSource.close();
             }
             $.post('/stop', function (response) {
-                statusDiv.innerHTML = `<div class="alert alert-warning">${response.status}</div>`;
+                statusText.textContent = `Download stopped.`;
             });
         });
     </script>
