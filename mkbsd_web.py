@@ -5,18 +5,24 @@ from aiohttp import ClientSession
 from urllib.parse import urlparse
 
 app = Flask(__name__)
-downloading = False 
+downloading = False
 
 url = 'https://storage.googleapis.com/panels-api/data/20240916/media-1a-i-p~s'
 
 async def download_image(session, image_url, file_path):
-    async with session.get(image_url) as response:
-        if response.status == 200:
-            content = await response.read()
-            with open(file_path, 'wb') as f:
-                f.write(content)
-            file_size = len(content)
-            return file_size 
+    try:
+        async with session.get(image_url) as response:
+            if response.status == 200:
+                content = await response.read()
+                with open(file_path, 'wb') as f:
+                    f.write(content)
+                return len(content)
+            else:
+                print(f"Failed to download {image_url}, status code: {response.status}")
+                return 0 
+    except Exception as e:
+        print(f"Error downloading {image_url}: {e}")
+        return 0
 
 def download_images_sync():
     global downloading
@@ -57,7 +63,7 @@ def download_images_sync():
                         file_path = os.path.join(download_dir, filename)
 
                         file_size = await download_image(session, image_url, file_path)
-                        total_size += file_size
+                        total_size += file_size 
                         downloaded_images += 1
 
                         yield {
